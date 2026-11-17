@@ -1,81 +1,58 @@
-import java.util.List;
-
-interface SmartDevice {
-    void turnOn();
-    void turnOff();
-    boolean isOn();
-    int getPowerPercent(); // Standard range: 0 to 100
-}
-class LegacyBulb {
-    private int brightnessLevel = 0; // Raw range: 0 to 255
-    private boolean filamentConnected = true;
-    public void setBrightness(int level) {
-        if (level < 0) this.brightnessLevel = 0;
-        else if (level > 255) this.brightnessLevel = 255;
-        else this.brightnessLevel = level;
-    }
-    public int readBrightness() {
-        return this.brightnessLevel;
-    }
-    public void breakFilament() {
-        this.filamentConnected = false;
-    }
-    public boolean hasPower() {
-        return this.filamentConnected && (this.brightnessLevel > 0);
-    }
-}
-class LegacyThermostat {
-    // Valid dial states: "IDLE", "LOW", "MEDIUM", "MAX"
-    private String dialPosition = "IDLE";
-    public void rotateDial(String position) {
-        this.dialPosition = position;
-    }
-    public String checkDial() {
-        return this.dialPosition;
-    }
-}
-class ModernHub {
-    private final List<SmartDevice> devices;
-    public ModernHub(List<SmartDevice> devices) {
-        this.devices = devices;
-    }
-class BulbAdapter implements SmartDevice{
-    private static final int K=4;
-    private final LegacyBulb bulb;
-    public BulbAdapter (LegacyBulb bulb) {
-        if (bulb == null) {
-            throw new IllegalArgumentException("LegacyBulb must not be null");
-        }
-        this.bulb = bulb;
-    }
-    @Override
-    public void turnOn(){
-        bulb.setBrightness(255);
-    }
-    @Override
-    public void turnOff(){
-        bulb.setBrightness(0);
-    }
-    @Override
-    public boolean isOn(){
-        if (!bulb.hasPower()) return False;
-        return bulb.readBrightness() > 0;
-    }
-    @Override
-    public int getPowerPercent() {
-        int raw = bulb.readBrightness();
-        if (raw == 0) return 0;
-        if (!bulb.hasPower()) return 0;
-
-        int rawPercent = (int) Math.floor((raw * 100.0) / 255.0);
-        int calibrated = rawPercent + K;
-        return Math.min(calibrated, 100);
-}
-
-
 public class Main {
-public static void main(String[] args) {
+    public static void main(String[] args) {
+        FlightBookingFacade bookingFacade = new FlightBookingFacade();
 
-        }
+        System.out.println("=== TEST 1: Standard Successful Booking ===");
+        String ticket1 = bookingFacade.bookFlight(
+                "Amina Suleimenova",
+                "KC101",
+                "14A",
+                320.00,
+                2,
+                23.0,
+                "EUR",
+                "4532015112830366"
+        );
+        System.out.println("Result 1: " + ticket1 + "\n");
+
+        System.out.println("=== TEST 2: Blocked Crew Seat (Row 13) ===");
+        String ticket2 = bookingFacade.bookFlight(
+                "Daniyar Kassymov",
+                "KC101",
+                "13C",
+                320.00,
+                1,
+                15.0,
+                "USD",
+                "4532015112830366"
+        );
+        System.out.println("Result 2: " + ticket2 + "\n");
+
+        System.out.println("=== TEST 3: Payment Failure & Automatic Seat Rollback ===");
+        String ticket3 = bookingFacade.bookFlight(
+                "Timur Bekov",
+                "KC101",
+                "07D",
+                320.00,
+                1,
+                18.0,
+                "KZT",
+                "9999"
+        );
+        System.out.println("Result 3: " + ticket3 + "\n");
+
+        System.out.println("=== TEST 4: Silver Loyalty Tier (Free Baggage + 10% Promo Discount) ===");
+        String ticket4 = bookingFacade.bookFlight(
+                "Madina Nurlanova",
+                "KC101",
+                "10B",
+                320.00,
+                3,
+                30.0,
+                "USD",
+                "4532015112830366",
+                "SILVER"
+        );
+        System.out.println("Result 4: " + ticket4 + "\n");
     }
 }
